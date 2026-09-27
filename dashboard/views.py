@@ -8,7 +8,7 @@ def home(request):
     has_dashboard_access = (
         user.is_superuser
         or user.is_staff
-        or user.groups.filter(name="Member").exists()
+        or user.has_perm("dashboard.access_member_dashboard")
     )
 
     if not has_dashboard_access:
