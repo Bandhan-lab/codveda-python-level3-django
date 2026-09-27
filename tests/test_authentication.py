@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
 from django.urls import reverse
 
@@ -25,7 +25,10 @@ class AuthenticationFlowTests(TestCase):
         })
         self.assertRedirects(response, reverse("dashboard"))
         user = User.objects.get(username="newuser")
-        self.assertTrue(user.is_authenticated)
+        self.assertEqual(
+            self.client.session["_auth_user_id"],
+            str(user.pk),
+        )
         self.assertTrue(user.groups.filter(name="Member").exists())
 
     def test_duplicate_email_is_rejected(self):
@@ -47,9 +50,17 @@ class AuthenticationFlowTests(TestCase):
         self.assertContains(response, "password")
 
     def test_login_and_logout(self):
-        self.assertTrue(self.client.login(username="bandhan", password="StrongPass123!"))
-        self.assertEqual(self.client.get(reverse("dashboard")).status_code, 200)
-        self.assertRedirects(self.client.post(reverse("logout")), reverse("login"))
+        self.assertTrue(
+            self.client.login(
+                username="bandhan",
+                password="StrongPass123!",
+            )
+        )
+        self.assertEqual(self.client.get(reverse("profile")).status_code, 200)
+        self.assertRedirects(
+            self.client.post(reverse("logout")),
+            reverse("login"),
+        )
 
     def test_dashboard_requires_authentication(self):
         response = self.client.get(reverse("dashboard"))
@@ -66,6 +77,11 @@ class AuthenticationFlowTests(TestCase):
 
     def test_member_role_can_access_dashboard(self):
         group = Group.objects.create(name="Member")
+        permission = Permission.objects.get(
+            content_type__app_label="dashboard",
+            codename="access_member_dashboard",
+        )
+        group.permissions.add(permission)
         self.user.groups.add(group)
         self.client.force_login(self.user)
         self.assertEqual(self.client.get(reverse("dashboard")).status_code, 200)
