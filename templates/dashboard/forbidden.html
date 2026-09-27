@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Access denied{% endblock %}
+
+{% block content %}
+<section class="card">
+    <p class="eyebrow">403 · Authorization</p>
+    <h1>Access denied</h1>
+    <p>Your account is authenticated, but it does not have permission to access this dashboard.</p>
+    <a class="button" href="{% url 'profile' %}">Return to profile</a>
+</section>
+{% endblock %}
